@@ -14,16 +14,11 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
     @IBOutlet private var boardView: BoardView!
     
     private var figures = [FigureView]()
-    private var boardUndoManager = NSUndoManager()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         observeUndoManager()
         updateUndoAndRedoButtons()
-    }
-    
-    override func canBecomeFirstResponder() -> Bool {
-        return true
     }
     
     @IBAction private func addRectangleTapped(sender: AnyObject) {
@@ -40,6 +35,7 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
         addFigure(figureView)
     }
     
+    /// MARK: Actions on Figures
     func addFigure(figure: FigureView) {
         registerUndoAddFigure(figure)
         
@@ -63,62 +59,51 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
         figure.center = center
     }
     
+    /// MARK: Undo Manager
+    override func canBecomeFirstResponder() -> Bool {
+        return true
+    }
+    
+    private var _undoManager = NSUndoManager()
+    override var undoManager: NSUndoManager {
+        return _undoManager
+    }
+    
+    private func observeUndoManager() {
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("updateUndoAndRedoButtons"), name: NSUndoManagerDidUndoChangeNotification, object: undoManager)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("updateUndoAndRedoButtons"), name: NSUndoManagerDidRedoChangeNotification, object: undoManager)
+    }
+
+    @objc private func updateUndoAndRedoButtons() {
+        undoButton.enabled = undoManager.canUndo == true
+        if undoManager.canUndo {
+            undoButton.setTitle(undoManager.undoMenuTitleForUndoActionName(undoManager.undoActionName), forState: .Normal)
+        } else {
+            undoButton.setTitle(undoManager.undoMenuItemTitle, forState: .Normal)
+        }
+        
+        redoButton.enabled = undoManager.canRedo == true
+        if undoManager.canRedo {
+            redoButton.setTitle(undoManager.redoMenuTitleForUndoActionName(undoManager.redoActionName), forState: .Normal)
+        } else {
+            redoButton.setTitle(undoManager.redoMenuItemTitle, forState: .Normal)
+        }
+    }
+    
     /// MARK: Undo Manager Actions
     func registerUndoAddFigure(figure: FigureView) {
-        undoManager.registerUndoWithTarget(self, selector: Selector("removeFigure:"), object: figure)
+        undoManager.prepareWithInvocationTarget(self).removeFigure(figure)
         undoManager.setActionName("Add Figure")
     }
     
     func registerUndoRemoveFigure(figure: FigureView) {
-        undoManager.registerUndoWithTarget(self, selector: Selector("addFigure:"), object: figure)
+        undoManager.prepareWithInvocationTarget(self).addFigure(figure)
         undoManager.setActionName("Remove Figure")
     }
     
     func registerUndoMoveFigure(figure: FigureView) {
         undoManager.prepareWithInvocationTarget(self).moveFigure(figure, center: figure.center)
         undoManager.setActionName("Move to \(figure.center)")
-    }
-    
-    
-    /// MARK: Undo Manager
-    override var undoManager: NSUndoManager {
-        return boardUndoManager
-    }
-    
-    private func observeUndoManager() {
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("undoManagerDidUndoNotification"), name: NSUndoManagerDidUndoChangeNotification, object: undoManager)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("undoManagerDidRedoNotification"), name: NSUndoManagerDidRedoChangeNotification, object: undoManager)
-    }
-    
-    @IBAction private func undoPressed(sender: AnyObject) {
-        undoManager.undo()
-    }
-    @IBAction private func redoPressed(sender: AnyObject) {
-        undoManager.redo()
-    }
-    
-    func undoManagerDidUndoNotification() {
-        updateUndoAndRedoButtons()
-    }
-    
-    func undoManagerDidRedoNotification() {
-        updateUndoAndRedoButtons()
-    }
-    
-    private func updateUndoAndRedoButtons() {
-        undoButton.enabled = undoManager.canUndo == true
-        if undoManager.canUndo {
-            undoButton.setTitle("Undo " + undoManager.undoActionName, forState: .Normal)
-        } else {
-            undoButton.setTitle("Undo", forState: .Normal)
-        }
-        
-        redoButton.enabled = undoManager.canRedo == true
-        if undoManager.canRedo {
-            redoButton.setTitle("Redo " + undoManager.redoActionName, forState: .Normal)
-        } else {
-            redoButton.setTitle("Redo", forState: .Normal)
-        }
     }
     
     

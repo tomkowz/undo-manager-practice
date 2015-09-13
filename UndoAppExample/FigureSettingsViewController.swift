@@ -30,6 +30,7 @@ extension FigureView {
         let cornerRadiusModified = self.cornerRadius.floatValue != beginCornerRadius.floatValue
         
         undoManager.beginUndoGrouping()
+        undoManager.prepareWithInvocationTarget(self).registerUndoChange()
         undoManager.registerUndoWithTarget(self, selector: Selector("registerUndoChange"), object: nil)
         undoManager.registerUndoWithTarget(self, selector: Selector("setBackgroundColor:"), object: beginBackgroundColor)
         undoManager.registerUndoWithTarget(self, selector: Selector("setCornerRadius:"), object: beginCornerRadius)
@@ -147,16 +148,16 @@ class FigureSettingsViewController: UIViewController {
     private func updateUndoAndRedoButtons() {
         undoButton.enabled = figure.undoManager.canUndo == true
         if figure.undoManager.canUndo {
-            undoButton.setTitle("Undo " + figure.undoManager.undoActionName, forState: .Normal)
+            undoButton.setTitle(figure.undoManager.undoMenuTitleForUndoActionName(figure.undoManager.undoActionName), forState: .Normal)
         } else {
-            undoButton.setTitle("Undo", forState: .Normal)
+            undoButton.setTitle(figure.undoManager.undoMenuItemTitle, forState: .Normal)
         }
         
         redoButton.enabled = figure.undoManager.canRedo == true
         if figure.undoManager.canRedo {
-            redoButton.setTitle("Redo " + figure.undoManager.redoActionName, forState: .Normal)
+            redoButton.setTitle(figure.undoManager.redoMenuTitleForUndoActionName(figure.undoManager.redoActionName), forState: .Normal)
         } else {
-            redoButton.setTitle("Redo", forState: .Normal)
+            redoButton.setTitle(figure.undoManager.redoMenuItemTitle, forState: .Normal)
         }
     }
 }
